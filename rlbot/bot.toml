@@ -2,9 +2,9 @@
 [settings]
 # This must be a unqiue identifier for your bot
 # recommended format is "developer/botname"
-agent_id = "GigaLearn/GGLBot"
+agent_id = "Vixt/Dice"
 # The name that will be displayed in game
-name = "GGLBot"
+name = "Dice"
 # Path to loadout config from runner
 loadout_file = "loadout.toml"
 # The native launcher resolves the shared LibTorch runtime before starting the bot core
@@ -16,18 +16,18 @@ run_command_linux = "./GGLBot"
 # This is the path to your bot's logo image,
 # which will be displayed in the GUI
 # The example bot does not have a logo
-# logo_file = ""
+logo_file = "logo.png"
 
 # These values are optional but useful metadata for helper programs
 [details]
 # Short description of the bot
-description = ""
+description = "Dice was trained on just 1's & 2's. Its fast paced gameplay will cause the best of the best to scramble."
 # Fun fact about the bot
-fun_fact = "Made with GigaLearn"
+fun_fact = "Dice has played 411 Years of continuous RL. (200B Steps)"
 # Link to your repository
 source_link = ""
 # Name of the bot's creator/developer
-developer = "The RLBot community"
+developer = "Vixt"
 # Programming language
 language = "C++"
 # ALL POSSIBLE TAGS: "1v1", "teamplay", "goalie", "hoops", "dropshot", "snow-day", "rumble", "spike-rush", "heatseeker", "memebot"

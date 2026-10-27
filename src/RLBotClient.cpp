@@ -1,4 +1,6 @@
 #include "RLBotClient.h"
+#include <algorithm>
+#include <unordered_set>
 
 using namespace RLGC;
 
@@ -95,6 +97,65 @@ namespace
 
         return gs;
     }
+
+    float DistSqToBall(const Player& player, const GameState& state) {
+        Vec toBall = state.ball.pos - player.pos;
+        return toBall.LengthSq();
+    }
+
+    GameState TrimGameStateForObs(const GameState& fullState, uint32_t localCarId) {
+        GameState trimmedState = fullState;
+
+        const Player* localPlayer = nullptr;
+        for (const auto& player : fullState.players) {
+            if (player.carId == localCarId) {
+                localPlayer = &player;
+                break;
+            }
+        }
+
+        if (!localPlayer)
+            return trimmedState;
+
+        std::vector<const Player*> teammates;
+        std::vector<const Player*> opponents;
+
+        for (const auto& player : fullState.players) {
+            if (player.carId == localCarId)
+                continue;
+
+            (player.team == localPlayer->team ? teammates : opponents).push_back(&player);
+        }
+
+        auto keepClosestToBall = [&](std::vector<const Player*>& players, size_t maxCount) {
+            if (players.size() <= maxCount)
+                return;
+
+            std::stable_sort(players.begin(), players.end(),
+                [&](const Player* a, const Player* b) {
+                    return DistSqToBall(*a, fullState) < DistSqToBall(*b, fullState);
+                }
+            );
+            players.resize(maxCount);
+        };
+
+        keepClosestToBall(teammates, 1);
+        keepClosestToBall(opponents, 2);
+
+        std::unordered_set<uint32_t> keptCarIds = { localCarId };
+        for (const auto* player : teammates)
+            keptCarIds.insert(player->carId);
+        for (const auto* player : opponents)
+            keptCarIds.insert(player->carId);
+
+        trimmedState.players.clear();
+        for (const auto& player : fullState.players) {
+            if (keptCarIds.contains(player.carId))
+                trimmedState.players.push_back(player);
+        }
+
+        return trimmedState;
+    }
 } // anonymous namespace
 
 RLBotBot::RLBotBot(std::unordered_set<unsigned> indices_,
@@ -125,7 +186,7 @@ void RLBotBot::update(rlbot::flat::GamePacket const* packet,
     int ticksElapsed = roundf(deltaTime * 120);
     ticks += ticksElapsed;
 
-    GameState gs = ToGameState(packet, deltaTime, m_playerTiming);
+    GameState fullGs = ToGameState(packet, deltaTime, m_playerTiming);
     
     for (auto const& index : this->indices)
     {
@@ -137,7 +198,20 @@ void RLBotBot::update(rlbot::flat::GamePacket const* packet,
             st.controls = RLGC::Action{};
         }
 
-        auto& localPlayer = gs.players[index];
+        if (index >= fullGs.players.size()) continue;
+        uint32_t localCarId = fullGs.players[index].carId;
+        GameState gs = TrimGameStateForObs(fullGs, localCarId);
+
+        auto localPlayerIter = std::find_if(gs.players.begin(), gs.players.end(),
+            [&](const Player& player) {
+                return player.carId == localCarId;
+            }
+        );
+        
+        if (localPlayerIter == gs.players.end())
+            continue;
+
+        auto& localPlayer = *localPlayerIter;
         localPlayer.prevAction = st.controls;
 
         if (updateAction) {
@@ -150,9 +224,17 @@ void RLBotBot::update(rlbot::flat::GamePacket const* packet,
         }
 
         const auto& c = st.controls;
+
+        float final_steer = c.steer;
+        if (localPlayer.isDemoed) {
+            float ball_x = fullGs.ball.pos.x;
+            float sign = (localPlayer.team == Team::BLUE) ? 1.0f : -1.0f;
+            final_steer = (ball_x * sign > 0) ? 1.0f : -1.0f;
+        }
+
         setOutput(index, {
             c.throttle,
-            c.steer,
+            final_steer,
             c.pitch,
             c.yaw,
             c.roll,

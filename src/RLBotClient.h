@@ -1,6 +1,7 @@
 #pragma once
 
 #include <rlbot/Bot.h>
+#include <RLGymCPP/ObsBuilders/AdvancedObsPadded.h>
 #include <RLGymCPP/ObsBuilders/AdvancedObs.h>
 #include <RLGymCPP/ActionParsers/DefaultAction.h>
 #include <GigaLearnCPP/InferUnit.h>

@@ -117,26 +117,26 @@ int main(int argc, char** argv)
     // ------------------------------------------------------------------------
     // Set the following to match the configuration your model was trained with
     // ------------------------------------------------------------------------
-    ctx->obs = std::make_shared<RLGC::AdvancedObs>();
+    ctx->obs = std::make_shared<RLGC::AdvancedObsPadded>(2);
     ctx->act = std::make_shared<RLGC::DefaultAction>();
 
     ctx->params.tickSkip = 8;
     ctx->params.actionDelay = ctx->params.tickSkip - 1;
 
-    int obsSize = 109; // You can find this from the console when running training
+    int obsSize = 167; // You can find this from the console when running training
 
     // Shared head config
     GGL::InferPartialModelConfig sharedHeadCfg;
-    sharedHeadCfg.layerSizes = { 256, 256 };
+    sharedHeadCfg.layerSizes = { 900, 900 };
     sharedHeadCfg.addLayerNorm = true;
-    sharedHeadCfg.activationType = GGL::ModelActivationType::RELU;
+    sharedHeadCfg.activationType = GGL::ModelActivationType::LEAKY_RELU;
     sharedHeadCfg.addOutputLayer = false; // <- leave this false
 
     // Policy config
     GGL::InferPartialModelConfig policyCfg;
-    policyCfg.layerSizes = { 256, 256, 256 };
+    policyCfg.layerSizes = { 900, 900, 900 };
     policyCfg.addLayerNorm = true;
-    policyCfg.activationType = GGL::ModelActivationType::RELU;
+    policyCfg.activationType = GGL::ModelActivationType::LEAKY_RELU;
     policyCfg.addOutputLayer = true;
 
     const bool useBallPrediction = false; // Set to true if using the built in ball prediction sent to RLBotBot::update in RLBotClient
